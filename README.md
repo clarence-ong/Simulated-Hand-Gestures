@@ -8,4 +8,4 @@ contains the 4 data sets for the 4 hand gestures
 
 **svmfit0M** is the trained radial kernel svm on the PCA preprocessed datasets in **Hand Gestures_0_M**
 
-**Filtering_0** uses the same test set in all the **Hand Gestures_0_M files** and runs the 3 SVM classifiers, treating all types other than 0 as "Others"
+**4 Type Classification** uses the same test set in all the **Hand Gestures_0_M files** and runs the 6 pairwise SVM classifiers, assigning the class to be the one that was predicted the most in the 6 classifiers.
