@@ -1,0 +1,119 @@
+---
+title: "Filtering_0"
+output: html_document
+---
+
+```{r load-libraries, warning=FALSE, echo=TRUE, message=FALSE}
+
+library(tidyverse)
+library(tree)
+library(gbm)
+library(e1071)
+
+```
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+col_names <- c()
+counter <- 0
+for(i in 1:8){
+  for(j in 1:8){
+    counter = counter + 1
+    coln <- paste("M", i, "S", j, sep = "")
+    col_names[counter] <- coln
+  }
+}
+col_names[counter + 1] <- "class" 
+
+X0 <- read_csv("../data/0.csv", col_names = FALSE)
+colnames(X0) <- col_names
+X0$class <- "Rock"
+X0$n_row <- seq(1:nrow(X0))
+
+X1 <- read_csv("../data/1.csv", col_names = FALSE)
+colnames(X1) <- col_names
+X1$class <- "Scissors"
+X1$n_row <- seq(1:nrow(X1))
+
+X2 <- read_csv("../data/2.csv", col_names = FALSE)
+colnames(X2) <- col_names
+X2$class <- "Paper"
+X2$n_row <- seq(1:nrow(X2))
+
+X3 <- read_csv("../data/3.csv", col_names = FALSE)
+colnames(X3) <- col_names
+X3$class <- "OK"
+X3$n_row <- seq(1:nrow(X3))
+
+set.seed(4231)
+train_X0 = sample_frac(X0, 0.8)
+test_X0 = (-c(sort(train_X0$n_row)))
+test_X0 = X0[c(test_X0),]
+train_X0 = select(train_X0,-c(n_row))
+test_X0 = select(test_X0,-c(n_row))
+
+set.seed(4231)
+train_X1 = sample_frac(X1, 0.8)
+test_X1 = (-c(sort(train_X1$n_row)))
+test_X1 = X1[c(test_X1),]
+train_X1 = select(train_X1,-c(n_row))
+test_X1 = select(test_X1,-c(n_row))
+
+set.seed(4231)
+train_X2 = sample_frac(X2, 0.8)
+test_X2 = (-c(sort(train_X2$n_row)))
+test_X2 = X2[c(test_X2),]
+train_X2 = select(train_X2,-c(n_row))
+test_X2 = select(test_X2,-c(n_row))
+
+set.seed(4231)
+train_X3 = sample_frac(X3, 0.8)
+test_X3 = (-c(sort(train_X3$n_row)))
+test_X3 = X3[c(test_X3),]
+train_X3 = select(train_X3,-c(n_row))
+test_X3 = select(test_X3,-c(n_row))
+
+test <- as.data.frame(rbind(test_X0, test_X1, test_X2, test_X3))
+test$class <- as.factor(test$class)
+
+trainPCA01 <- readRDS("./trainPCA01.rds")
+trainPCA02 <- readRDS("./trainPCA01.rds")
+trainPCA03 <- readRDS("./trainPCA01.rds")
+
+test_01 <- test
+test.data_01 <- predict(trainPCA01, newdata = test_01)
+test_01 <- cbind(test_01, test.data_01[,1:17])
+
+test_02 <- test
+test.data_02 <- predict(trainPCA02, newdata = test_02)
+test_02 <- cbind(test_02, test.data_02[,1:22])
+
+test_03 <- test
+test.data_03 <- predict(trainPCA03, newdata = test_03)
+test_03 <- cbind(test_03, test.data_03[,1:17])
+
+svmfit01 <- readRDS("./svmfit01.rds")
+svmfit02 <- readRDS("./svmfit02.rds")
+svmfit03 <- readRDS("./svmfit03.rds")
+
+pred_01 <- predict(svmfit01,newdata=select(test_01, class:PC17))
+pred_02 <- predict(svmfit02,newdata=select(test_02, class:PC22))
+pred_03 <- predict(svmfit03,newdata=select(test_03, class:PC17))
+
+pred_df <- as.data.frame(cbind(as.vector(pred_01),as.vector(pred_02),as.vector(pred_03)))
+
+colnames(pred_df) <- c("pred_01", "pred_02", "pred_03")
+
+pred_df$count <- apply(pred_df, 1, function(x) length(which(x=="Rock")))
+
+test$pseudo_class <- ifelse(test$class == "Rock", "Rock", "Others")
+
+pred_df$pseudo_class <- ifelse(pred_df$count >= 2, "Rock", "Others")
+
+table(test$pseudo_class, pred_df$pseudo_class)
+
+nrow(test)
+
+```
