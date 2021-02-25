@@ -1,0 +1,104 @@
+---
+title: "Hand_Gestures_2_3"
+output: html_document
+---
+
+```{r load-libraries, warning=FALSE, echo=TRUE, message=FALSE}
+
+library(tidyverse)
+library(tree)
+library(gbm)
+library(e1071)
+
+```
+
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+col_names <- c()
+counter <- 0
+for(i in 1:8){
+  for(j in 1:8){
+    counter = counter + 1
+    coln <- paste("M", i, "S", j, sep = "")
+    col_names[counter] <- coln
+  }
+}
+col_names[counter + 1] <- "class" 
+
+X2 <- read_csv("../data/2.csv", col_names = FALSE)
+colnames(X2) <- col_names
+X2$class <- "Paper"
+X2$n_row <- seq(1:nrow(X2))
+
+X3 <- read_csv("../data/3.csv", col_names = FALSE)
+colnames(X3) <- col_names
+X3$class <- "OK"
+X3$n_row <- seq(1:nrow(X3))
+
+set.seed(4231)
+train_X2 = sample_frac(X2, 0.8)
+test_X2 = (-c(sort(train_X2$n_row)))
+test_X2 = X2[c(test_X2),]
+train_X2 = select(train_X2,-c(n_row))
+test_X2 = select(test_X2,-c(n_row))
+
+set.seed(4231)
+train_X3 = sample_frac(X3, 0.8)
+test_X3 = (-c(sort(train_X3$n_row)))
+test_X3 = X3[c(test_X3),]
+train_X3 = select(train_X3,-c(n_row))
+test_X3 = select(test_X3,-c(n_row))
+
+train <- as.data.frame(rbind(train_X2, train_X3))
+train$class <- as.factor(train$class)
+test <- as.data.frame(rbind(test_X2, test_X3))
+test$class <- as.factor(test$class)
+```
+
+
+```{r pca, warning=FALSE, echo=TRUE, message=FALSE}
+
+classes_train <- factor(train$class)
+trainPCA <- prcomp(train[,-ncol(train)])
+#saveRDS(trainPCA, "./trainPCA23.rds")
+
+train <- cbind(train, trainPCA$x[,1:32])
+plot(trainPCA$x[,c(2,1)], col = classes_train)
+
+test.data <- predict(trainPCA, newdata = test)
+test <- cbind(test, test.data[,1:32])
+
+trainPCA$rotation[1:5,1:4]
+std_dev <- trainPCA$sdev
+pr_var <- std_dev^2
+prop_varex <- pr_var/sum(pr_var)
+
+plot(cumsum(prop_varex), xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance Explained",
+     type = "b")
+
+sum(prop_varex[1:32])
+```
+
+```{r radial_kernel, warning=FALSE, echo=TRUE, message=FALSE}
+
+set.seed(1)
+svmfit=svm(class~., data=select(train, class:PC32), kernel="radial", gamma=0.05, cost=2.4)
+
+#plot(svmfit, train[,c("PC1", "PC2", "class")])
+
+#tune.out=tune(svm, class~., data=sample_frac(select(train, class:PC18), 1), kernel="radial", ranges=list(cost=c(2.2,2.3,2.4,2.5,2.6),gamma=c(0.06,0.07,0.08,0.09,0.10,0.11)))
+
+#summary(tune.out)
+
+table(true=test$class, pred=predict(svmfit,newdata=select(test, class:PC32)))
+
+#table(true=test$class, pred=predict(tune.out$best.model,newdata=select(test, class:PC22)))
+
+#saveRDS(svmfit, "./svmfit23.rds")
+
+```
+

@@ -79,8 +79,11 @@ test <- as.data.frame(rbind(test_X0, test_X1, test_X2, test_X3))
 test$class <- as.factor(test$class)
 
 trainPCA01 <- readRDS("./trainPCA01.rds")
-trainPCA02 <- readRDS("./trainPCA01.rds")
-trainPCA03 <- readRDS("./trainPCA01.rds")
+trainPCA02 <- readRDS("./trainPCA02.rds")
+trainPCA03 <- readRDS("./trainPCA03.rds")
+trainPCA12 <- readRDS("./trainPCA12.rds")
+trainPCA13 <- readRDS("./trainPCA13.rds")
+trainPCA23 <- readRDS("./trainPCA23.rds")
 
 test_01 <- test
 test.data_01 <- predict(trainPCA01, newdata = test_01)
@@ -94,26 +97,50 @@ test_03 <- test
 test.data_03 <- predict(trainPCA03, newdata = test_03)
 test_03 <- cbind(test_03, test.data_03[,1:17])
 
+test_12 <- test
+test.data_12 <- predict(trainPCA12, newdata = test_12)
+test_12 <- cbind(test_12, test.data_03[,1:18])
+
+test_13 <- test
+test.data_13 <- predict(trainPCA13, newdata = test_13)
+test_13 <- cbind(test_13, test.data_13[,1:32])
+
+test_23 <- test
+test.data_23 <- predict(trainPCA23, newdata = test_23)
+test_23 <- cbind(test_23, test.data_23[,1:32])
+
 svmfit01 <- readRDS("./svmfit01.rds")
 svmfit02 <- readRDS("./svmfit02.rds")
 svmfit03 <- readRDS("./svmfit03.rds")
+svmfit12 <- readRDS("./svmfit12.rds")
+svmfit13 <- readRDS("./svmfit13.rds")
+svmfit23 <- readRDS("./svmfit23.rds")
 
 pred_01 <- predict(svmfit01,newdata=select(test_01, class:PC17))
 pred_02 <- predict(svmfit02,newdata=select(test_02, class:PC22))
 pred_03 <- predict(svmfit03,newdata=select(test_03, class:PC17))
+pred_12 <- predict(svmfit12,newdata=select(test_12, class:PC18))
+pred_13 <- predict(svmfit13,newdata=select(test_13, class:PC32))
+pred_23 <- predict(svmfit23,newdata=select(test_23, class:PC32))
 
-pred_df <- as.data.frame(cbind(as.vector(pred_01),as.vector(pred_02),as.vector(pred_03)))
+pred_df <- as.data.frame(cbind(as.vector(pred_01),as.vector(pred_02),as.vector(pred_03), as.vector(pred_12), as.vector(pred_13), as.vector(pred_23)))
 
-colnames(pred_df) <- c("pred_01", "pred_02", "pred_03")
+colnames(pred_df) <- c("pred_01", "pred_02", "pred_03", "pred_12", "pred_13", "pred_23")
 
-pred_df$count <- apply(pred_df, 1, function(x) length(which(x=="Rock")))
+pred_df$count_rock <- apply(pred_df, 1, function(x) length(which(x=="Rock")))
+
+pred_df$count_scissors <- apply(pred_df, 1, function(x) length(which(x=="Scissors")))
+
+pred_df$count_paper <- apply(pred_df, 1, function(x) length(which(x=="Paper")))
+
+pred_df$count_ok <- apply(pred_df, 1, function(x) length(which(x=="OK")))
 
 test$pseudo_class <- ifelse(test$class == "Rock", "Rock", "Others")
 
-pred_df$pseudo_class <- ifelse(pred_df$count >= 2, "Rock", "Others")
+pred_df$max <- apply(pred_df, 1, function(x) which.max(x))
 
-table(test$pseudo_class, pred_df$pseudo_class)
+pred_df$pseudo_class <- ifelse(pred_df$max == 7, "Rock", ifelse(pred_df$max == 8, "Scissors", ifelse(pred_df$max == 9, "Paper", "OK")))
 
-nrow(test)
+table(factor(test$class), factor(pred_df$pseudo_class))
 
 ```
