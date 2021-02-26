@@ -503,11 +503,9 @@ pred_df$count_scissors &lt;- apply(pred_df[,1:6], 1, function(x) length(which(x=
 
 pred_df$count_paper &lt;- apply(pred_df[,1:6], 1, function(x) length(which(x==&quot;Paper&quot;)))
 
-pred_df$count_ok &lt;- apply(pred_df, 1, function(x) length(which(x==&quot;OK&quot;)))
+pred_df$count_ok &lt;- apply(pred_df[,1:6], 1, function(x) length(which(x==&quot;OK&quot;)))
 
 pred_df$max &lt;- apply(pred_df, 1, function(x) which.max(x))
-
-pred_df$pseudo_class &lt;- ifelse(pred_df$max == 8, &quot;Rock&quot;, ifelse(pred_df$max == 9, &quot;Scissors&quot;, ifelse(pred_df$max == 10, &quot;Paper&quot;, &quot;OK&quot;)))
 
 pred_df$pseudo_class &lt;- ifelse(pred_df$max == 8, &quot;Rock&quot;, ifelse((pred_df$count_scissors == 2 &amp; pred_df$count_paper == 2 &amp; pred_df$count_ok == 2), pred_123, ifelse(pred_df$max == 9, &quot;Scissors&quot;, ifelse(pred_df$max == 10, &quot;Paper&quot;, &quot;OK&quot;))))
 
@@ -519,12 +517,12 @@ pred_df$pseudo_class &lt;- replace(pred_df$pseudo_class, which(pred_df$pseudo_cl
 
 table(factor(test$class), factor(pred_df$pseudo_class))</code></pre>
 <pre><code>##           
-##             OK Paper Rock Scissors
-##   OK       508    40    8       28
-##   Paper     60   476   10       43
-##   Rock       4     8  568        2
-##   Scissors  18   107    6      450</code></pre>
-<pre class="r"><code>(508 + 476 + 568 + 450)/nrow(test)</code></pre>
+##              1  OK Paper Rock Scissors
+##   OK         2 506    40    8       28
+##   Paper      1  59   476   10       43
+##   Rock       0   1     8  570        3
+##   Scissors   4  14   107    6      450</code></pre>
+<pre class="r"><code>(506 + 476 + 570 + 450)/nrow(test)</code></pre>
 <pre><code>## [1] 0.8570205</code></pre>
 <pre class="r"><code>## No Tie Breaking and assigning all ties to type 1
 
@@ -533,12 +531,12 @@ pred_df$pseudo_class &lt;- ifelse(pred_df$max == 8, &quot;Rock&quot;, ifelse(pre
 table(factor(test$class), factor(pred_df$pseudo_class))</code></pre>
 <pre><code>##           
 ##             OK Paper Rock Scissors
-##   OK       508    34    8       34
-##   Paper     60   385   10      134
-##   Rock       4     8  568        2
-##   Scissors  18    93    6      464</code></pre>
-<pre class="r"><code>(508 + 385 + 568 + 464)/nrow(test)</code></pre>
-<pre><code>## [1] 0.8240582</code></pre>
+##   OK       506    34    8       36
+##   Paper     59   385   10      135
+##   Rock       1     8  570        3
+##   Scissors  14    93    6      468</code></pre>
+<pre class="r"><code>(506 + 385 + 570 + 468)/nrow(test)</code></pre>
+<pre><code>## [1] 0.8257705</code></pre>
 
 
 
