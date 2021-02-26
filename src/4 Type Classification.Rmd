@@ -1,5 +1,5 @@
 ---
-title: "4 Type Classification"
+title: "4 Type Clustering"
 output: html_document
 ---
 
@@ -78,6 +78,24 @@ test_X3 = select(test_X3,-c(n_row))
 test <- as.data.frame(rbind(test_X0, test_X1, test_X2, test_X3))
 test$class <- as.factor(test$class)
 
+```
+
+```{r training_3_type_classifier, warning=FALSE, echo=TRUE,message=FALSE}
+
+train <- as.data.frame(rbind(train_X1, train_X2, train_X3))
+train$class <- as.factor(train$class)
+
+classes_train <- factor(train$class)
+trainPCA123 <- prcomp(train[,-ncol(train)])
+train <- cbind(train, trainPCA123$x[,1:32])
+
+svmfit123=svm(class~., data=select(train, class:PC32), kernel="radial", gamma=0.1, cost=2.7)
+
+```
+
+
+```{r classification, warning=FALSE, echo=TRUE, message=FALSE}
+
 trainPCA01 <- readRDS("./trainPCA01.rds")
 trainPCA02 <- readRDS("./trainPCA02.rds")
 trainPCA03 <- readRDS("./trainPCA03.rds")
@@ -109,6 +127,10 @@ test_23 <- test
 test.data_23 <- predict(trainPCA23, newdata = test_23)
 test_23 <- cbind(test_23, test.data_23[,1:32])
 
+test_123 <- test
+test.data_123 <- predict(trainPCA123, newdata = test_123)
+test_123 <- cbind(test_123, test.data_123[,1:32]) 
+
 svmfit01 <- readRDS("./svmfit01.rds")
 svmfit02 <- readRDS("./svmfit02.rds")
 svmfit03 <- readRDS("./svmfit03.rds")
@@ -116,31 +138,49 @@ svmfit12 <- readRDS("./svmfit12.rds")
 svmfit13 <- readRDS("./svmfit13.rds")
 svmfit23 <- readRDS("./svmfit23.rds")
 
+
 pred_01 <- predict(svmfit01,newdata=select(test_01, class:PC17))
 pred_02 <- predict(svmfit02,newdata=select(test_02, class:PC22))
 pred_03 <- predict(svmfit03,newdata=select(test_03, class:PC17))
 pred_12 <- predict(svmfit12,newdata=select(test_12, class:PC18))
 pred_13 <- predict(svmfit13,newdata=select(test_13, class:PC32))
 pred_23 <- predict(svmfit23,newdata=select(test_23, class:PC32))
+pred_123 <- predict(svmfit123,newdata=select(test_123, class:PC32))
 
-pred_df <- as.data.frame(cbind(as.vector(pred_01),as.vector(pred_02),as.vector(pred_03), as.vector(pred_12), as.vector(pred_13), as.vector(pred_23)))
+pred_df <- as.data.frame(cbind(as.vector(pred_01),as.vector(pred_02),as.vector(pred_03), as.vector(pred_12), as.vector(pred_13), as.vector(pred_23), as.vector(pred_123)))
 
-colnames(pred_df) <- c("pred_01", "pred_02", "pred_03", "pred_12", "pred_13", "pred_23")
+colnames(pred_df) <- c("pred_01", "pred_02", "pred_03", "pred_12", "pred_13", "pred_23", "pred_123")
 
-pred_df$count_rock <- apply(pred_df, 1, function(x) length(which(x=="Rock")))
+pred_df$count_rock <- apply(pred_df[,1:6], 1, function(x) length(which(x=="Rock")))
 
-pred_df$count_scissors <- apply(pred_df, 1, function(x) length(which(x=="Scissors")))
+pred_df$count_scissors <- apply(pred_df[,1:6], 1, function(x) length(which(x=="Scissors")))
 
-pred_df$count_paper <- apply(pred_df, 1, function(x) length(which(x=="Paper")))
+pred_df$count_paper <- apply(pred_df[,1:6], 1, function(x) length(which(x=="Paper")))
 
 pred_df$count_ok <- apply(pred_df, 1, function(x) length(which(x=="OK")))
 
-test$pseudo_class <- ifelse(test$class == "Rock", "Rock", "Others")
-
 pred_df$max <- apply(pred_df, 1, function(x) which.max(x))
 
-pred_df$pseudo_class <- ifelse(pred_df$max == 7, "Rock", ifelse(pred_df$max == 8, "Scissors", ifelse(pred_df$max == 9, "Paper", "OK")))
+pred_df$pseudo_class <- ifelse(pred_df$max == 8, "Rock", ifelse(pred_df$max == 9, "Scissors", ifelse(pred_df$max == 10, "Paper", "OK")))
+
+pred_df$pseudo_class <- ifelse(pred_df$max == 8, "Rock", ifelse((pred_df$count_scissors == 2 & pred_df$count_paper == 2 & pred_df$count_ok == 2), pred_123, ifelse(pred_df$max == 9, "Scissors", ifelse(pred_df$max == 10, "Paper", "OK"))))
+
+pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 2), "Paper")
+
+pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 3), "Scissors")
+
+## With secondary classification for tie breaking of types 1, 2 and 3
 
 table(factor(test$class), factor(pred_df$pseudo_class))
+
+(508 + 476 + 568 + 450)/nrow(test)
+
+## No Tie Breaking and assigning all ties to type 1
+
+pred_df$pseudo_class <- ifelse(pred_df$max == 8, "Rock", ifelse(pred_df$max == 9, "Scissors", ifelse(pred_df$max == 10, "Paper", "OK")))
+
+table(factor(test$class), factor(pred_df$pseudo_class))
+
+(508 + 385 + 568 + 464)/nrow(test)
 
 ```
