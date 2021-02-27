@@ -509,6 +509,8 @@ pred_df$max &lt;- apply(pred_df, 1, function(x) which.max(x))
 
 pred_df$pseudo_class &lt;- ifelse(pred_df$max == 8, &quot;Rock&quot;, ifelse((pred_df$count_scissors == 2 &amp; pred_df$count_paper == 2 &amp; pred_df$count_ok == 2), pred_123, ifelse(pred_df$max == 9, &quot;Scissors&quot;, ifelse(pred_df$max == 10, &quot;Paper&quot;, &quot;OK&quot;))))
 
+pred_df$pseudo_class &lt;- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 1), &quot;OK&quot;)
+
 pred_df$pseudo_class &lt;- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 2), &quot;Paper&quot;)
 
 pred_df$pseudo_class &lt;- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 3), &quot;Scissors&quot;)
@@ -517,13 +519,13 @@ pred_df$pseudo_class &lt;- replace(pred_df$pseudo_class, which(pred_df$pseudo_cl
 
 table(factor(test$class), factor(pred_df$pseudo_class))</code></pre>
 <pre><code>##           
-##              1  OK Paper Rock Scissors
-##   OK         2 506    40    8       28
-##   Paper      1  59   476   10       43
-##   Rock       0   1     8  570        3
-##   Scissors   4  14   107    6      450</code></pre>
-<pre class="r"><code>(506 + 476 + 570 + 450)/nrow(test)</code></pre>
-<pre><code>## [1] 0.8570205</code></pre>
+##             OK Paper Rock Scissors
+##   OK       508    40    8       28
+##   Paper     60   476   10       43
+##   Rock       1     8  570        3
+##   Scissors  18   107    6      450</code></pre>
+<pre class="r"><code>(508 + 476 + 570 + 450)/nrow(test)</code></pre>
+<pre><code>## [1] 0.8578767</code></pre>
 <pre class="r"><code>## No Tie Breaking and assigning all ties to type 1
 
 pred_df$pseudo_class &lt;- ifelse(pred_df$max == 8, &quot;Rock&quot;, ifelse(pred_df$max == 9, &quot;Scissors&quot;, ifelse(pred_df$max == 10, &quot;Paper&quot;, &quot;OK&quot;)))

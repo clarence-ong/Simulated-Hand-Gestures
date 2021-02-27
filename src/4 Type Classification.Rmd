@@ -163,6 +163,8 @@ pred_df$max <- apply(pred_df, 1, function(x) which.max(x))
 
 pred_df$pseudo_class <- ifelse(pred_df$max == 8, "Rock", ifelse((pred_df$count_scissors == 2 & pred_df$count_paper == 2 & pred_df$count_ok == 2), pred_123, ifelse(pred_df$max == 9, "Scissors", ifelse(pred_df$max == 10, "Paper", "OK"))))
 
+pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 1), "OK")
+
 pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 2), "Paper")
 
 pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 3), "Scissors")
@@ -171,7 +173,7 @@ pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class
 
 table(factor(test$class), factor(pred_df$pseudo_class))
 
-(506 + 476 + 570 + 450)/nrow(test)
+(508 + 476 + 570 + 450)/nrow(test)
 
 ## No Tie Breaking and assigning all ties to type 1
 
