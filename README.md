@@ -1,7 +1,7 @@
 # Simulated-Hand-Gestures
 
 # data
-contains the 4 data sets for the 4 hand gestures
+contains the 4 data sets for the 4 hand gestures from https://www.kaggle.com/kyr7plus/emg-4?select=0.csv
 
 # src
 **Hand Gestures_0_M** contains the pairwise analysis for type 0 and type M
