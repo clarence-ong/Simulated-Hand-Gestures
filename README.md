@@ -8,4 +8,6 @@ contains the 4 data sets for the 4 hand gestures from https://www.kaggle.com/kyr
 
 **svmfit0M** is the trained radial kernel svm on the PCA preprocessed datasets in **Hand Gestures_0_M**
 
-**4 Type Classification** uses the same test set in all the **Hand Gestures_0_M files** and runs the 6 pairwise SVM classifiers, assigning the class to be the one that was predicted the most in the 6 classifiers.
+**4 Type Classification** uses the same test set in all the **Hand Gestures_0_M files** and runs the 6 pairwise SVM classifiers, assigning the class to be the one that was predicted the most in the 6 classifiers. (Extra introduction of tie breaking classifier in the event of ties between Types 1, 2 & 3)
+
+
