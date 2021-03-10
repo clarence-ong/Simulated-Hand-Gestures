@@ -1,0 +1,88 @@
+---
+title: "8 Sensors Data Analysis"
+output: html_document
+---
+
+```{r load-libraries, warning=FALSE, echo=TRUE, message=FALSE}
+
+library(tidyverse)
+library(tree)
+library(gbm)
+library(e1071)
+library(tree)
+library(nnet)
+
+```
+
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+df <- read.csv("../data/new_clean.csv")
+df$class <- as.factor(df$class)
+
+table(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.75)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+svmfit01 <- readRDS("./svmfit01.rds")
+svmfit02 <- readRDS("./svmfit02.rds")
+svmfit03 <- readRDS("./svmfit03.rds")
+svmfit12 <- readRDS("./svmfit12.rds")
+svmfit13 <- readRDS("./svmfit13.rds")
+svmfit23 <- readRDS("./svmfit23.rds")
+svmfit123 <- readRDS("./svmfit123.rds")
+
+pred_01 <- predict(svmfit01,newdata=test)
+pred_02 <- predict(svmfit02,newdata=test)
+pred_03 <- predict(svmfit03,newdata=test)
+pred_12 <- predict(svmfit12,newdata=test)
+pred_13 <- predict(svmfit13,newdata=test)
+pred_23 <- predict(svmfit23,newdata=test)
+pred_123 <- predict(svmfit123,newdata=test)
+
+pred_df <- as.data.frame(cbind(as.vector(pred_01),as.vector(pred_02),as.vector(pred_03), as.vector(pred_12), as.vector(pred_13), as.vector(pred_23), as.vector(pred_123)))
+
+colnames(pred_df) <- c("pred_01", "pred_02", "pred_03", "pred_12", "pred_13", "pred_23", "pred_123")
+
+pred_df$count_rock <- apply(pred_df[,1:6], 1, function(x) length(which(x==0)))
+
+pred_df$count_scissors <- apply(pred_df[,1:6], 1, function(x) length(which(x==1)))
+
+pred_df$count_paper <- apply(pred_df[,1:6], 1, function(x) length(which(x==2)))
+
+pred_df$count_ok <- apply(pred_df[,1:6], 1, function(x) length(which(x==3)))
+
+pred_df$max <- apply(pred_df[,8:11], 1, function(x) which.max(x))
+
+pred_df$pseudo_class <- ifelse(pred_df$max == 1, "Rock", ifelse((pred_df$count_scissors == 2 & pred_df$count_paper == 2 & pred_df$count_ok == 2), pred_123, ifelse(pred_df$max == 2, "Scissors", ifelse(pred_df$max == 3, "Paper", "OK"))))
+
+pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 2), "Scissors")
+
+pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 3), "Paper")
+
+pred_df$pseudo_class <- replace(pred_df$pseudo_class, which(pred_df$pseudo_class == 4), "OK")
+  
+test$class_original <- ifelse(test$class == 0, "Rock", ifelse(test$class == 1, "Scissors", ifelse(test$class == 2, "Paper", "OK")))
+
+table(factor(test$class_original), factor(pred_df$pseudo_class))
+
+confusion_df <- as.data.frame(table(factor(test$class_original), factor(pred_df$pseudo_class)))
+
+colnames(confusion_df) <- c("Ground Truth", "Predicted Class", "counts")
+
+library(dplyr)
+
+ggplot(data = confusion_df, mapping = aes(x = `Predicted Class`, y = `Ground Truth`))+ geom_tile(aes(fill = counts), colour = "white") + geom_text(aes(label = sprintf("%1.0f",counts)), vjust = 1, size = 5) + scale_fill_gradient(low = "white", high = "steelblue") + labs(x = "Predicted Type", y = "Ground Truth Type")
+
+(3838 + 3854 + 4558 + 5024)/nrow(test)
+
+```

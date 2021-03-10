@@ -1,0 +1,351 @@
+---
+title: "Hand_Gestures_0_1"
+output: html_document
+---
+
+```{r load-libraries, warning=FALSE, echo=TRUE, message=FALSE}
+
+library(tidyverse)
+library(tree)
+library(gbm)
+library(e1071)
+
+```
+
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+df <- read.csv("../data/new_clean.csv")
+df$class <- as.factor(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.7)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+train_set <- filter(train, class != 2) %>% filter(class != 3)
+test_set <- filter(test, class != 2) %>% filter(class != 3)
+
+
+```
+
+```{r radial_kernel, warning=FALSE, echo=TRUE, message=FALSE}
+
+nrow(train_set)
+
+set.seed(1)
+
+costvec = exp(seq(log(2), log(3), length.out = 10))
+
+tune.out=tune(svm,class~.,
+              data= train_set,
+              kernel="radial",
+              ranges=list(cost=costvec),
+              verbose = T)
+
+bestmod=tune.out$best.model
+
+table(true=test_set$class, pred=predict(bestmod,newdata=test_set))
+
+library(caret)
+saveRDS(bestmod, "./svmfit01.rds")
+
+#svmfit <- readRDS("./svmfit01.rds")
+
+
+```
+
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+df <- read.csv("../data/new_clean.csv")
+df$class <- as.factor(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.7)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+train_set <- filter(train, class != 1) %>% filter(class != 3)
+test_set <- filter(test, class != 1) %>% filter(class != 3)
+
+
+```
+
+```{r radial_kernel, warning=FALSE, echo=TRUE, message=FALSE}
+
+nrow(train_set)
+
+set.seed(1)
+
+costvec = exp(seq(log(2), log(3), length.out = 10))
+
+tune.out=tune(svm,class~.,
+              data= train_set,
+              kernel="radial",
+              ranges=list(cost=costvec),
+              verbose = T)
+
+bestmod=tune.out$best.model
+
+table(true=test_set$class, pred=predict(bestmod,newdata=test_set))
+
+library(caret)
+saveRDS(bestmod, "./svmfit02.rds")
+
+#svmfit <- readRDS("./svmfit01.rds")
+
+
+```
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+df <- read.csv("../data/new_clean.csv")
+df$class <- as.factor(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.7)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+train_set <- filter(train, class != 2) %>% filter(class != 1)
+test_set <- filter(test, class != 2) %>% filter(class != 1)
+
+
+```
+
+```{r radial_kernel, warning=FALSE, echo=TRUE, message=FALSE}
+
+nrow(train_set)
+
+set.seed(1)
+
+costvec = exp(seq(log(2), log(3), length.out = 10))
+
+tune.out=tune(svm,class~.,
+              data= train_set,
+              kernel="radial",
+              ranges=list(cost=costvec),
+              verbose = T)
+
+bestmod=tune.out$best.model
+
+table(true=test_set$class, pred=predict(bestmod,newdata=test_set))
+
+library(caret)
+saveRDS(bestmod, "./svmfit03.rds")
+
+#svmfit <- readRDS("./svmfit01.rds")
+
+
+```
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+df <- read.csv("../data/new_clean.csv")
+df$class <- as.factor(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.7)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+train_set <- filter(train, class != 0) %>% filter(class != 3)
+test_set <- filter(test, class != 0) %>% filter(class != 3)
+
+
+```
+
+```{r radial_kernel, warning=FALSE, echo=TRUE, message=FALSE}
+
+nrow(train_set)
+
+set.seed(1)
+
+costvec = exp(seq(log(2), log(3), length.out = 10))
+
+tune.out=tune(svm,class~.,
+              data= train_set,
+              kernel="radial",
+              ranges=list(cost=costvec),
+              verbose = T)
+
+bestmod=tune.out$best.model
+
+table(true=test_set$class, pred=predict(bestmod,newdata=test_set))
+
+library(caret)
+saveRDS(bestmod, "./svmfit12.rds")
+
+#svmfit <- readRDS("./svmfit01.rds")
+
+
+```
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+df <- read.csv("../data/new_clean.csv")
+df$class <- as.factor(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.7)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+train_set <- filter(train, class != 2) %>% filter(class != 0)
+test_set <- filter(test, class != 2) %>% filter(class != 0)
+
+
+```
+
+```{r radial_kernel, warning=FALSE, echo=TRUE, message=FALSE}
+
+nrow(train_set)
+
+set.seed(1)
+
+costvec = exp(seq(log(2), log(3), length.out = 10))
+
+tune.out=tune(svm,class~.,
+              data= train_set,
+              kernel="radial",
+              ranges=list(cost=costvec),
+              verbose = T)
+
+bestmod=tune.out$best.model
+
+table(true=test_set$class, pred=predict(bestmod,newdata=test_set))
+
+library(caret)
+saveRDS(bestmod, "./svmfit13.rds")
+
+#svmfit <- readRDS("./svmfit01.rds")
+
+
+```
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+df <- read.csv("../data/new_clean.csv")
+df$class <- as.factor(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.7)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+train_set <- filter(train, class != 0) %>% filter(class != 1)
+test_set <- filter(test, class != 0) %>% filter(class != 1)
+
+
+```
+
+```{r radial_kernel, warning=FALSE, echo=TRUE, message=FALSE}
+
+nrow(train_set)
+
+set.seed(1)
+
+costvec = exp(seq(log(2), log(3), length.out = 10))
+
+tune.out=tune(svm,class~.,
+              data= train_set,
+              kernel="radial",
+              ranges=list(cost=costvec),
+              verbose = T)
+
+bestmod=tune.out$best.model
+
+table(true=test_set$class, pred=predict(bestmod,newdata=test_set))
+
+library(caret)
+saveRDS(bestmod, "./svmfit23.rds")
+
+#svmfit <- readRDS("./svmfit01.rds")
+
+
+```
+
+```{r data_preprocessing, warning=FALSE, echo=TRUE, message=FALSE}
+
+## 0: Rock, 1: Scissors, 2: Paper, 3: OK
+
+df <- read.csv("../data/new_clean.csv")
+df$class <- as.factor(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.7)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+train_set <- filter(train, class != 0)
+test_set <- filter(test, class != 0)
+
+
+```
+
+```{r radial_kernel, warning=FALSE, echo=TRUE, message=FALSE}
+
+nrow(train_set)
+
+set.seed(1)
+
+costvec = exp(seq(log(2), log(3), length.out = 10))
+
+tune.out=tune(svm,class~.,
+              data= train_set,
+              kernel="radial",
+              ranges=list(cost=costvec),
+              verbose = T)
+
+bestmod=tune.out$best.model
+
+table(true=test_set$class, pred=predict(bestmod,newdata=test_set))
+
+library(caret)
+saveRDS(bestmod, "./svmfit123.rds")
+
+#svmfit <- readRDS("./svmfit01.rds")
+
+
+```
