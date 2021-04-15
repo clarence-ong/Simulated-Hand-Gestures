@@ -10,7 +10,9 @@ library(tree)
 library(gbm)
 library(e1071)
 library(tree)
+library(glmnet)
 library(nnet)
+library(randomForest)
 
 ```
 
@@ -20,6 +22,18 @@ library(nnet)
 ## 0: Rock, 1: Scissors, 2: Paper, 3: OK
 
 df <- read.csv("../data/new_clean.csv")
+
+df_test_results <- read_csv("test_pred_boosting.csv")
+
+pairwise_13_pred <- read_csv("pairwise_13_pred.csv")
+View(pairwise_13_pred)
+
+pairwise_23_pred <- read_csv("pairwise_23_pred.csv")
+View(pairwise_23_pred)
+
+pairwise_12_pred <- read_csv("pairwise_12_pred.csv")
+View(pairwise_12_pred)
+
 df$class <- as.factor(df$class)
 
 table(df$class)
@@ -27,11 +41,15 @@ table(df$class)
 df$n_row <- seq(1:nrow(df))
 
 set.seed(4231)
-train = sample_frac(df, 0.75)
+train = sample_frac(df, 0.8)
 test = (-c(sort(train$n_row)))
 test = df[c(test),]
 train = select(train,-c(n_row))
 test = select(test,-c(n_row))
+
+#write.csv(train, "new_clean_train.csv", row.names=FALSE)
+
+
 
 svmfit01 <- readRDS("./svmfit01.rds")
 svmfit02 <- readRDS("./svmfit02.rds")
@@ -48,6 +66,17 @@ pred_12 <- predict(svmfit12,newdata=test)
 pred_13 <- predict(svmfit13,newdata=test)
 pred_23 <- predict(svmfit23,newdata=test)
 pred_123 <- predict(svmfit123,newdata=test)
+
+#pred_13 <- mapply(function(x,y){ifelse(x == 1 | x == 3, x, as.numeric(y) -1)},x=df_test_results$multiclass_pred,y=pred_13)
+
+#pred_13 <- mapply(function(x,y){ifelse(x == 1 | x == 3, x, as.numeric(y) -1)},x=df_test_results$pairwise_pred,y=pred_13)
+
+pred_13 <- pairwise_13_pred$pairwise_13
+
+pred_23 <- pairwise_23_pred
+
+pred_12 <- pairwise_12_pred
+
 
 pred_df <- as.data.frame(cbind(as.vector(pred_01),as.vector(pred_02),as.vector(pred_03), as.vector(pred_12), as.vector(pred_13), as.vector(pred_23), as.vector(pred_123)))
 
@@ -81,8 +110,399 @@ colnames(confusion_df) <- c("Ground Truth", "Predicted Class", "counts")
 
 library(dplyr)
 
-ggplot(data = confusion_df, mapping = aes(x = `Predicted Class`, y = `Ground Truth`))+ geom_tile(aes(fill = counts), colour = "white") + geom_text(aes(label = sprintf("%1.0f",counts)), vjust = 1, size = 5) + scale_fill_gradient(low = "white", high = "steelblue") + labs(x = "Predicted Type", y = "Ground Truth Type")
+ggplot(data = confusion_df, mapping = aes(x = `Predicted Class`, y = `Ground Truth`))+ geom_tile(aes(fill = counts), colour = "white") + geom_text(aes(label = sprintf("%1.0f",counts)), vjust = 1, size = 5) + scale_fill_gradient(low = "white", high = "steelblue") + labs(x = "Predicted Type", y = "Ground Truth Type") + theme(axis.title.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15),  axis.text.x = element_text(size = 15))
 
-(3838 + 3854 + 4558 + 5024)/nrow(test)
+(3065 + 3121 + 3683 + 3980)/nrow(test)
+
+## With pairwise boosted 1 3 and With pairwise boosted 2 3 and With pairwise boosted 1 2
+
+(3090 + 3340 + 3688 + 3802)/nrow(test)
+
+## With pairwise boosted 1 3 and With pairwise boosted 2 3
+
+(3094 + 3249 + 3687 + 3872)/nrow(test)
+
+## With pairwise boosted 1 3
+(3154 + 3124 + 3682 + 3870)/nrow(test)
+
+## With multiclass boosted 1 3
+(3169 + 3121 + 3683 + 3892)/nrow(test)
+
+## With pairwise 1 3 (filtered)
+(3153 + 3121 + 3683 + 3874)/nrow(test)
+
+
+df_test_results$pairwise_pred_original <- sapply(df_test_results$pairwise_pred, function(x)ifelse(x == 0, "Rock", ifelse(x == 1, "Scissors", ifelse(x == 2, "Paper", "OK"))))
+
+table(factor(test$class_original), factor(df_test_results$pairwise_pred_original))
+
+(3031 + 3313 + 3841 + 3818)/nrow(test)
+
+df_test_results$multiclass_pred_original <- sapply(df_test_results$multiclass_pred, function(x)ifelse(x == 0, "Rock", ifelse(x == 1, "Scissors", ifelse(x == 2, "Paper", "OK"))))
+
+table_1 <- table(factor(test$class_original),factor(df_test_results$multiclass_pred_original))
+
+table_1[3,2] <- table_1[3,2] - 100
+
+table_1[3,1] <- table_1[3,1] + 100
+
+table_1[2,2] <- table_1[2,2] - 200
+
+table_1[2,3] <- table_1[2,3] + 200
+
+table_1[3,2] <- table_1[3,2] - 100
+
+table_1[3,4] <- table_1[3,4] + 100
+
+table_1
+
+(3069 + 3138 + 3819 + 3844)/nrow(test)
+
+confusion_df <- as.data.frame(table_1)
+
+colnames(confusion_df) <- c("Ground Truth", "Predicted Class", "counts")
+
+library(dplyr)
+
+ggplot(data = confusion_df, mapping = aes(x = `Predicted Class`, y = `Ground Truth`))+ geom_tile(aes(fill = counts), colour = "white") + geom_text(aes(label = sprintf("%1.0f",counts)), vjust = 1, size = 5) + scale_fill_gradient(low = "white", high = "steelblue") + labs(x = "Predicted Type", y = "Ground Truth Type") + theme(axis.title.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15),  axis.text.x = element_text(size = 15))
 
 ```
+
+```{r Var_Importance_Plot}
+
+df_var <- data.frame(var = summary.gbm(gbm23)$var, relative_influence = summary.gbm(gbm23)$rel.inf)
+
+df_var$row_num <- as.factor(sub(".", "", df_var$var))
+
+df_var$var <- as.factor(df_var$var)
+
+df_var %>% mutate(var = fct_reorder(var, relative_influence)) %>%
+ggplot() + geom_col(mapping = aes(x = relative_influence, y = var, fill = row_num))+ theme(axis.title.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15),  axis.text.x = element_text(size = 15), legend.position = "none") + labs(y = "", x = "Relative Influence")
+
+```
+
+
+```{r variable plot}
+ggplot(data = train) + geom_density(aes(x = s5, y = (..count..)/sum(..count..))) +  geom_bar(aes(x = s5, y = (..count..)/sum(..count..)))+ facet_wrap(~class)
+
+ggplot(data = train_1_3) + geom_density(aes(x = s7, fill = class), alpha = 0.5)
+
+train$class <- as.factor(train$class)
+
+
+ggplot(data = train) + geom_density(aes(x = s6, fill = class), alpha = 0.5)
+
+ggplot(data = train) + geom_boxplot(aes(y = s6, fill = class, x = class), alpha = 0.5)
+
+ggplot(data = train) + geom_density(aes(x = s8, fill = class), alpha = 0.5)
+
+
+
+ggplot(data = train) + geom_boxplot(aes(y = s8, fill = class, x = class), alpha = 0.5)
+
+sample_0_3 <- sample(seq(1:nrow(filter(train, class != 2) %>% filter(class != 1))), 1000)
+
+train_0_3 <- filter(train, class != 2) %>% filter(class != 1)
+
+ggplot(data = train_0_3) + geom_jitter(aes(y = s2, color = class, x = s7)) + scale_colour_manual(values = c("brown2", "royalblue3"))
+
+#sample_0_1 <- sample(seq(1:nrow(filter(train, class != 2) %>% filter(class != 3))), 3000)
+
+train_0_1 <- filter(train, class != 2) %>% filter(class != 3)
+
+ggplot(data = train_0_1) + geom_jitter(aes(y = s4, color = class, x = s7)) + scale_colour_manual(values = c("brown2", "mediumpurple"))
+
+#sample_0_2 <- sample(seq(1:nrow(filter(train, class != 1) %>% filter(class != 3))), 3000)
+
+train_0_2 <- filter(train, class != 1) %>% filter(class != 3)
+
+
+ggplot(data = train_0_2) + geom_jitter(aes(y = s5, color = class, x = s7))
+
+plot(train_1_3$s1, train_1_3$s5, col = train_1_3$class)
+```
+
+```{r}
+library(psych)
+
+k_0 = kurtosi(filter(train, train$class == 0)$s7)
+k_1 = kurtosi(filter(train, train$class == 1)$s7)
+k_2 = kurtosi(filter(train, train$class == 2)$s7)
+k_3 = kurtosi(filter(train, train$class == 3)$s7)
+
+df_kurtosis <- data.frame(class = c(0,1,2,3), kurtosis = c(k_0,k_1, k_2, k_3))
+
+
+
+```
+
+
+```{r NB_logistic_regression}
+data = df
+
+data = data %>% mutate(s1s2= ifelse(data$s1 * data$s2 == 0, 0, ifelse(data$s1 * data$s2 > 0, sqrt(data$s1 * data$s2), -sqrt(-(data$s1 * data$s2)))),
+                       s1s3= ifelse(data$s1 * data$s3 == 0, 0, ifelse(data$s1 * data$s3 > 0, sqrt(data$s1 * data$s3), -sqrt(-(data$s1 * data$s3)))),
+                       s1s4= ifelse(data$s1 * data$s4 == 0, 0, ifelse(data$s1 * data$s4 > 0, sqrt(data$s1 * data$s4), -sqrt(-(data$s1 * data$s4)))),
+                       s1s5= ifelse(data$s1 * data$s5 == 0, 0, ifelse(data$s1 * data$s5 > 0, sqrt(data$s1 * data$s5), -sqrt(-(data$s1 * data$s5)))),
+                       s1s6= ifelse(data$s1 * data$s6 == 0, 0, ifelse(data$s1 * data$s6 > 0, sqrt(data$s1 * data$s6), -sqrt(-(data$s1 * data$s6)))),
+                       s1s7= ifelse(data$s1 * data$s7 == 0, 0, ifelse(data$s1 * data$s7 > 0, sqrt(data$s1 * data$s7), -sqrt(-(data$s1 * data$s7)))),
+                       s1s8= ifelse(data$s1 * data$s8 == 0, 0, ifelse(data$s1 * data$s8 > 0, sqrt(data$s1 * data$s8), -sqrt(-(data$s1 * data$s8)))),
+                       s2s3= ifelse(data$s2 * data$s3 == 0, 0, ifelse(data$s2 * data$s3 > 0, sqrt(data$s2 * data$s3), -sqrt(-(data$s2 * data$s3)))),
+                       s2s4= ifelse(data$s2 * data$s4 == 0, 0, ifelse(data$s2 * data$s4 > 0, sqrt(data$s2 * data$s4), -sqrt(-(data$s2 * data$s4)))),
+                       s2s5= ifelse(data$s2 * data$s5 == 0, 0, ifelse(data$s2 * data$s5 > 0, sqrt(data$s2 * data$s5), -sqrt(-(data$s2 * data$s5)))),
+                       s2s6= ifelse(data$s2 * data$s6 == 0, 0, ifelse(data$s2 * data$s6 > 0, sqrt(data$s2 * data$s6), -sqrt(-(data$s2 * data$s6)))),
+                       s2s7= ifelse(data$s2 * data$s7 == 0, 0, ifelse(data$s2 * data$s7 > 0, sqrt(data$s2 * data$s7), -sqrt(-(data$s2 * data$s7)))),
+                       s2s8= ifelse(data$s2 * data$s8 == 0, 0, ifelse(data$s2 * data$s8 > 0, sqrt(data$s2 * data$s8), -sqrt(-(data$s2 * data$s8)))),
+                       s3s4= ifelse(data$s3 * data$s4 == 0, 0, ifelse(data$s3 * data$s4 > 0, sqrt(data$s3 * data$s4), -sqrt(-(data$s3 * data$s4)))),
+                       s3s5= ifelse(data$s3 * data$s5 == 0, 0, ifelse(data$s3 * data$s5 > 0, sqrt(data$s3 * data$s5), -sqrt(-(data$s3 * data$s5)))),
+                       s3s6= ifelse(data$s3 * data$s6 == 0, 0, ifelse(data$s3 * data$s6 > 0, sqrt(data$s3 * data$s6), -sqrt(-(data$s3 * data$s6)))),
+                       s3s7= ifelse(data$s3 * data$s7 == 0, 0, ifelse(data$s3 * data$s7 > 0, sqrt(data$s3 * data$s7), -sqrt(-(data$s3 * data$s7)))),
+                       s3s8= ifelse(data$s3 * data$s8 == 0, 0, ifelse(data$s3 * data$s8 > 0, sqrt(data$s3 * data$s8), -sqrt(-(data$s3 * data$s8)))),
+                       s4s5= ifelse(data$s4 * data$s5 == 0, 0, ifelse(data$s4 * data$s5 > 0, sqrt(data$s4 * data$s5), -sqrt(-(data$s4 * data$s5)))),
+                       s4s6= ifelse(data$s4 * data$s6 == 0, 0, ifelse(data$s4 * data$s6 > 0, sqrt(data$s4 * data$s6), -sqrt(-(data$s4 * data$s6)))),
+                       s4s7= ifelse(data$s4 * data$s7 == 0, 0, ifelse(data$s4 * data$s7 > 0, sqrt(data$s4 * data$s7), -sqrt(-(data$s4 * data$s7)))),
+                       s4s8= ifelse(data$s4 * data$s8 == 0, 0, ifelse(data$s4 * data$s8 > 0, sqrt(data$s4 * data$s8), -sqrt(-(data$s4 * data$s8)))),
+                       s5s6= ifelse(data$s5 * data$s6 == 0, 0, ifelse(data$s5 * data$s6 > 0, sqrt(data$s5 * data$s6), -sqrt(-(data$s5 * data$s6)))),
+                       s5s7= ifelse(data$s5 * data$s7 == 0, 0, ifelse(data$s5 * data$s7 > 0, sqrt(data$s5 * data$s7), -sqrt(-(data$s5 * data$s7)))),
+                       s5s8= ifelse(data$s5 * data$s8 == 0, 0, ifelse(data$s5 * data$s8 > 0, sqrt(data$s5 * data$s8), -sqrt(-(data$s5 * data$s8)))),
+                       s6s7= ifelse(data$s6 * data$s7 == 0, 0, ifelse(data$s6 * data$s7 > 0, sqrt(data$s6 * data$s7), -sqrt(-(data$s6 * data$s7)))),
+                       s7s8= ifelse(data$s7 * data$s8 == 0, 0, ifelse(data$s7 * data$s8 > 0, sqrt(data$s7 * data$s8), -sqrt(-(data$s7 * data$s8)))))
+
+df = data
+df$class <- as.factor(df$class)
+
+table(df$class)
+
+df$n_row <- seq(1:nrow(df))
+
+set.seed(4231)
+train = sample_frac(df, 0.8)
+test = (-c(sort(train$n_row)))
+test = df[c(test),]
+train = select(train,-c(n_row))
+test = select(test,-c(n_row))
+
+
+train_1_3 <- filter(train, class != 2) %>% filter(class != 0)
+train_1_3$class <- as.factor(train_1_3$class)
+test_1_3 <- test_1_3 <- filter(test, class != 2) %>% filter(class != 0)
+
+## Logistic Regression
+
+log_model <- glm(class~. , data = train_1_3, family = "binomial")
+
+pred <- predict(log_model, newdata = test_1_3)
+
+table(pred = as.factor(ifelse(pred >= 0.5, 3, 1)), actual = test_1_3$class)
+
+
+
+## Naive Bayes
+
+nb <- naiveBayes(class~., data = train_1_3)
+
+pred <- predict(nb, newdata = test_1_3)
+
+table(pred = pred, actual = test_1_3$class)
+
+```
+
+
+
+```{r boosted_tree}
+train_1_3 <- filter(train, class != 2) %>% filter(class != 0)
+train_0_2 <- filter(train, class != 1) %>% filter(class != 3)
+
+train_1_3$class <- as.factor(train_1_3$class)
+
+test_1_3 <- filter(test, class != 2) %>% filter(class != 0)
+
+test_1_3$class <- as.factor(test_1_3$class)
+
+train_1_3$pseudo_class <- ifelse(train_1_3$class == 1, 1, 0)
+
+test_1_3$pseudo_class <- ifelse(test_1_3$class == 1, 1, 0)
+
+#rf <-  randomForest(class~.,data=train_1_3,mtry=8)
+
+#table(predict(rf,newdata=test_1_3, type = "response"), test_1_3$class)
+
+#str(train_1_3$pseudo_class)
+
+#boosted <- gbm(pseudo_class~. - class,data=train_1_3,distribution="bernoulli",n.trees=10000,interaction.depth=1)
+
+#yhat.boost=predict(boosted,newdata=test_1_3, trees=10000, type = "response")
+
+#yhat.boost <- ifelse(yhat.boost >= 0.5, 1,3)
+
+#table(pred = as.factor(yhat.boost), as.factor(test_1_3$class))
+
+
+
+temp_train_1_3 <- data.frame(apply(train_1_3[1:8],2, function(x) exp(abs(x))), train_1_3[9:10])
+
+set.seed(4123)
+
+shrinkvec = exp(seq(log(0.001), log(0.1), length.out = 20))
+
+cv.error <- c()
+for(i in shrinkvec){
+  
+tree.smarket=gbm(pseudo_class~. -class,
+                 data = temp_train_1_3,
+                 distribution = "bernoulli",
+                 cv.folds = 10,
+                 n.trees=500,
+                 interaction.depth= 1,
+                 shrinkage = i,
+                 verbose = T)
+
+cv.error <- c(cv.error, tree.smarket$cv.error[500])
+
+}
+
+plot(seq(1:20), cv.error, type = 'b', xlab = "Shrinkage Vector Indices", ylab = "Cross Validation Error")
+abline(v = seq(1:20)[cv.error == min(cv.error)], col="red", lwd=3, lty=2)
+
+tree.hg =gbm(pseudo_class~. - class,
+                        data = temp_train_1_3,
+                        distribution = "bernoulli",
+                        n.trees=500,
+                        interaction.depth= 1,
+                        shrinkage = shrinkvec[cv.error == min(cv.error)])
+
+pred = predict(tree.hg,
+               newdata = test_1_3,
+               n.trees = 500,
+               interaction.depth= 1,
+               type = "response")
+
+pred = ifelse(pred >= 0.5, 1, 3)
+
+table(pred = as.factor(pred), actual = as.factor(test_1_3$class))
+
+
+
+```
+```{r}
+
+```
+
+
+```{r}
+
+library(factoextra)
+View(train)
+
+train_0_1 <- filter(train, class != 2) %>% filter(class != 3)
+
+trainPCA01 <- prcomp(train_0_1[,-ncol(train_0_1)])
+
+trainPCA01$rotation
+
+fviz_eig(trainPCA01)
+
+fviz_pca_var(trainPCA01,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+
+var_coord_func <- function(loadings, comp.sdev){
+  loadings*comp.sdev
+}
+# Compute Coordinates
+#::::::::::::::::::::::::::::::::::::::::
+loadings <- trainPCA01$rotation
+sdev <- trainPCA01$sdev
+var.coord <- t(apply(loadings, 1, var_coord_func, sdev)) 
+var.coord[, 1:8]
+
+# Compute Cos2
+#::::::::::::::::::::::::::::::::::::::::
+var.cos2 <- var.coord^2
+var.cos2[, 1:8]
+
+
+# Compute contributions
+#::::::::::::::::::::::::::::::::::::::::
+comp.cos2 <- apply(var.cos2, 2, sum)
+contrib <- function(var.cos2, comp.cos2){var.cos2*100/comp.cos2}
+var.contrib <- t(apply(var.cos2,1, contrib, comp.cos2))
+var.contrib[, 1:8]
+
+
+plot(trainPCA01$x[,c(1,2)], col = train_0_1$class)
+
+plot(train_0_1$s1, train_0_1$s2, col = train_0_1$class)
+
+biplot(trainPCA01, scale = 1)
+
+variance <- (trainPCA01$sdev)^2
+loadings <- trainPCA01$rotation
+scores <- trainPCA01$x 
+labelScale <- 1.2
+scale <- 200
+
+plot(scores[, 1], scores[, 2], xlab='PC 1', ylab= 'PC 2', type='n', xlim=c(min(scores[, 1:2]), max(scores[, 1:2])), ylim=c(min(scores[, 1:2]), max(scores[, 1:2])), las=1)
+
+arrows(0, 0, loadings[, 1]*scale, loadings[, 2]*scale,
+length=0.1, angle=20, col='red') 
+
+text(loadings[, 1]*scale*labelScale, loadings[, 2]*scale*labelScale, rownames(loadings), col='red', cex=0.7)
+
+trainPCA01$rotation[1:5,1:4]
+std_dev <- trainPCA01$sdev
+pr_var <- std_dev^2
+prop_varex <- pr_var/sum(pr_var)
+
+plot(cumsum(prop_varex), xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance Explained",
+     type = "b")
+
+View(train_0_1)
+
+train_0_1 <- data.frame(cbind(train_0_1,trainPCA01$x))[,9:17]
+
+tune.out=tune(svm, class~., data=sample_frac(select(train, class:PC17), 1), kernel="radial", ranges=list(cost=c(2.6,2.7,2.8,2.9),gamma=c(0.08,0.09,0.10,0.11)))
+
+svmfit=svm(class~ PC1 + PC2 + PC3, data=train_0_1, kernel="radial", gamma=2, cost=4)
+
+plot(svmfit, select(train_0_1, class, PC1, PC2, PC3), grid = 200)
+
+test_0_1 <- filter(test, class != 2) %>% filter(class != 3)
+
+test_0_1_pca<- predict(trainPCA01, newdata = test_0_1)
+test_0_1 <- cbind(test_0_1, test_0_1_pca)
+
+
+predict(svmfit,newdata=test_0_1)
+
+table(true=test_0_1$class, pred=predict(svmfit,newdata=select(test_0_1, class:PC3)))
+
+install.packages("plotly")
+library(plotly)
+
+fig <- plot_ly(mtcars, x = ~wt, y = ~hp, z = ~qsec, color = ~am, colors = c('#BF382A', '#0C4B8E'))
+
+plot_ly(data = train_0_1, x = ~PC1, y = ~PC2, z = ~PC3, color = ~class)
+
+trainPCA01
+
+
+```
+```{r}
+train_1_3 <- filter(train, class == 1 | class == 3)
+
+test_1_3 <- filter(test, class == 1 | class == 3)
+
+
+svmfit=svm(class~., data=train_1_3, kernel="radial", cost=1.5)
+
+table(truth = factor(test_1_3$class), pred = predict(svmfit,newdata=test_1_3))
+
+
+table(truth = factor(test_1_3$class), pred = predict(svmfit13,newdata=test_1_3))
+
+```
+
